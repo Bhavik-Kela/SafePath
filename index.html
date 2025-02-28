@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeGuard - Emergency SOS & Location Sharing</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+    <style>
+        :root {
+            --dark-bg: #121212;
+            --card-bg: #1e1e1e;
+            --blue-accent: #2196F3;
+            --red-accent: #f44336;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0b0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            margin-bottom: 2rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .logo-icon {
+            color: var(--blue-accent);
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 1.5rem;
+        }
+
+        nav a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        nav a:hover {
+            color: var(--text-primary);
+        }
+
+        .hero {
+            text-align: center;
+            margin: 3rem 0;
+        }
+
+        .hero h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .hero p {
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto 2rem;
+            line-height: 1.6;
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-blue {
+            background-color: var(--blue-accent);
+            color: white;
+        }
+
+        .btn-red {
+            background-color: var(--red-accent);
+            color: white;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 4rem 0;
+        }
+
+        .feature-card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+        }
+
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--blue-accent);
+        }
+
+        .feature-card h3 {
+            margin-bottom: 1rem;
+        }
+
+        .feature-card p {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem 0;
+            color: var(--text-secondary);
+            margin-top: 3rem;
+            border-top: 1px solid #333;
+        }
+
+        /* Status alert styles */
+        .status-alert {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            display: none;
+            z-index: 1000;
+            animation: fadeIn 0.3s;
+        }
+
+        .alert-success {
+            background-color: #4CAF50;
+        }
+
+        .alert-error {
+            background-color: #f44336;
+        }
+
+        .alert-warning {
+            background-color: #ff9800;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <span class="logo-icon">🛡️</span>
+                <span>SafeGuard</span>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="#">Home</a></li>
+                    <li><a href="#">Features</a></li>
+                    <li><a href="#">How It Works</a></li>
+                    <li><a href="#">Contact</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main>
+            <section class="hero">
+                <h1>Stay Safe with Live Location Sharing</h1>
+                <p>SafeGuard helps you share your live location with trusted contacts and send emergency SOS alerts when you need help.</p>
+            </section>
+
+            <section class="action-buttons">
+                <button id="liveLocationBtn" class="btn btn-blue">
+                    <span>📍</span>
+                    Start Live Location
+                </button>
+                <button id="sosBtn" class="btn btn-red">
+                    <span>🚨</span>
+                    Emergency SOS
+                </button>
+            </section>
+
+            <section class="features">
+                <div class="feature-card">
+                    <div class="feature-icon">📍</div>
+                    <h3>Real-time Location Sharing</h3>
+                    <p>Share your live location with trusted contacts in real-time. They can track your journey to ensure you reach safely.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🚨</div>
+                    <h3>Emergency SOS</h3>
+                    <p>One-tap emergency alert to instantly notify your emergency contacts with your current location.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">👥</div>
+                    <h3>Trusted Contacts</h3>
+                    <p>Manage your emergency contacts list and customize alert messages for different situations.</p>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>© 2025 SafeGuard. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <!-- Status Alert -->
+    <div id="statusAlert" class="status-alert"></div>
+
+    <script>
+        // Firebase configuration - Replace with your Firebase project details
+        const firebaseConfig = {
+            apiKey: "AIzaSyAADz_7iWA5dw-zM6xTS3R-pN32-nJAEC4",
+            authDomain: "safepath-a12ea.firebaseapp.com",
+            databaseURL: "",
+            projectId: "safepath-a12ea",
+            storageBucket: "safepath-a12ea.firebasestorage.app",
+            messagingSenderId: "188201442619",
+            appId: "1:188201442619:web:e0c59a4a820f946cc5eb1e"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // Emergency contact number (pre-set)
+        const emergencyContact = "+919082771408"; // Replace with actual emergency contact number
+        
+        // Emergency message
+        const emergencyMessage = "EMERGENCY: I need help! Check my location.";
+
+        // User ID - In a real app, this would come from authentication
+        const userId = "user_" + Math.random().toString(36).substr(2, 9);
+
+        // DOM Elements
+        const sosBtn = document.getElementById('sosBtn');
+        const liveLocationBtn = document.getElementById('liveLocationBtn');
+        const statusAlert = document.getElementById('statusAlert');
+
+        // Show status alert
+        function showAlert(message, type) {
+            statusAlert.textContent = message;
+            statusAlert.className = 'status-alert';
+            statusAlert.classList.add(`alert-${type}`);
+            statusAlert.style.display = 'block';
+            
+            setTimeout(() => {
+                statusAlert.style.display = 'none';
+            }, 5000);
+        }
+
+        // Get current location
+        function getCurrentLocation() {
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) {
+                    reject("Geolocation is not supported by your browser");
+                    return;
+                }
+
+                navigator.geolocation.getCurrentPosition(
+                    position => {
+                        resolve({
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude,
+                            timestamp: new Date().toISOString()
+                        });
+                    },
+                    error => {
+                        reject(`Error getting location: ${error.message}`);
+                    },
+                    { enableHighAccuracy: true }
+                );
+            });
+        }
+
+        // Start tracking live location
+        let locationTrackingId = null;
+        
+        function startLiveLocation() {
+            if (locationTrackingId) {
+                showAlert("Already sharing location", "warning");
+                return;
+            }
+
+            locationTrackingId = navigator.geolocation.watchPosition(
+                position => {
+                    const locationData = {
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                        timestamp: new Date().toISOString(),
+                        accuracy: position.coords.accuracy,
+                        userId: userId
+                    };
+
+                    // Save to Firebase
+                    database.ref(`users/${userId}/location`).set(locationData)
+                        .then(() => {
+                            console.log("Location updated successfully");
+                        })
+                        .catch(error => {
+                            console.error("Error updating location:", error);
+                        });
+                },
+                error => {
+                    showAlert(`Location tracking error: ${error.message}`, "error");
+                    stopLiveLocation();
+                },
+                { enableHighAccuracy: true, maximumAge: 10000, timeout: 10000 }
+            );
+
+            showAlert("Live location sharing started", "success");
+            liveLocationBtn.textContent = "Stop Sharing Location";
+            liveLocationBtn.innerHTML = `<span>⏹️</span> Stop Sharing Location`;
+        }
+
+        // Stop tracking live location
+        function stopLiveLocation() {
+            if (locationTrackingId) {
+                navigator.geolocation.clearWatch(locationTrackingId);
+                locationTrackingId = null;
+                
+                // Update database to show tracking stopped
+                database.ref(`users/${userId}/location/isActive`).set(false)
+                    .then(() => {
+                        console.log("Location sharing stopped");
+                    })
+                    .catch(error => {
+                        console.error("Error updating location status:", error);
+                    });
+                
+                liveLocationBtn.innerHTML = `<span>📍</span> Start Live Location`;
+                showAlert("Location sharing stopped", "success");
+            }
+        }
+
+        // Toggle live location tracking
+        liveLocationBtn.addEventListener('click', () => {
+            if (locationTrackingId) {
+                stopLiveLocation();
+            } else {
+                startLiveLocation();
+            }
+        });
+
+        // Send SOS alert with location
+        sosBtn.addEventListener('click', async () => {
+            try {
+                // Start location sharing if not already active
+                if (!locationTrackingId) {
+                    startLiveLocation();
+                }
+                
+                // Get current location
+                const location = await getCurrentLocation();
+                
+                // Create SOS alert data
+                const sosData = {
+                    message: emergencyMessage,
+                    location: location,
+                    timestamp: new Date().toISOString(),
+                    userId: userId,
+                    status: "active"
+                };
+                
+                // Save to Firebase
+                const newSosRef = database.ref('sos').push();
+                await newSosRef.set(sosData);
+                
+                // Prepare WhatsApp link with message and location
+                const mapsUrl = `https://maps.google.com/?q=${location.latitude},${location.longitude}`;
+                const whatsappMessage = encodeURIComponent(`${emergencyMessage} My current location: ${mapsUrl}`);
+                const whatsappLink = `https://wa.me/${emergencyContact}?text=${whatsappMessage}`;
+                
+                // Store WhatsApp link in Firebase
+                await database.ref(`sos/${newSosRef.key}/whatsappLink`).set(whatsappLink);
+                
+                // Open WhatsApp
+                window.open(whatsappLink, '_blank');
+                
+                showAlert("SOS alert sent successfully", "success");
+                
+                // Trigger server-side notification (normally handled by a Firebase Cloud Function)
+                // This would be implemented server-side in a production app
+                await database.ref(`notifications/${userId}`).set({
+                    type: "sos",
+                    sosId: newSosRef.key,
+                    timestamp: new Date().toISOString(),
+                    sent: false
+                });
+                
+            } catch (error) {
+                showAlert(`Error sending SOS: ${error}`, "error");
+                console.error("SOS Error:", error);
+            }
+        });
+    </script>
+</body>
+</html>

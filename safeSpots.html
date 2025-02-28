@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafePath - Emergency SOS & Location Sharing</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <!-- Google Maps API -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAe_qpDoffLTZ4Zl1utBNWZqDzOgXaI_sY&libraries=places"></script>
+    
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <span class="logo-icon">👣</span>
+                <span>SafePath</span>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="#" class="nav-link" data-section="home">Home</a></li>
+                    <li><a href="#" class="nav-link" data-section="safespots">Safe Spots</a></li>
+                    <li><a href="#" class="nav-link" data-section="profile">Add Emergency Contact</a></li>
+                    <li><a href="#" id="loginLogoutBtn">Login</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main>
+            <!-- Welcome Section (Shown when not logged in) -->
+            <section id="welcome-section" class="hero">
+                <h1>Stay Safe with Live Location Sharing</h1>
+                <p>SafePath helps you share your live location with trusted contacts and send emergency SOS alerts when you need help.</p>
+                <button id="getStartedBtn" class="btn btn-blue">
+                    <span>🔐</span>
+                    Get Started - Login
+                </button>
+            </section>
+
+            <!-- App Sections (Hidden until logged in) -->
+            <div class="app-sections">
+                <!-- Home Section -->
+                <section id="home-section">
+                    <div class="hero">
+                        <h1>Welcome to SafePath</h1>
+                        <p>Share your location with trusted contacts or find safe spots nearby.</p>
+                    </div>
+
+                    <section class="action-buttons">
+                        <button id="liveLocationBtn" class="btn btn-blue">
+                            <span>📍</span>
+                            Start Live Location
+                        </button>
+                        <button id="sosBtn" class="btn btn-red">
+                            <span>🚨</span>
+                            Emergency SOS
+                        </button>
+                        <button id="findSafeSpotsBtn" class="btn btn-green">
+                            <span>🔍</span>
+                            Find Safe Spots
+                        </button>
+                    </section>
+
+                    <section class="features">
+                        <div class="feature-card">
+                            <div class="feature-icon">📍</div>
+                            <h3>Real-time Location Sharing</h3>
+                            <p>Share your live location with trusted contacts in real-time. They can track your journey to ensure you reach safely.</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">🚨</div>
+                            <h3>Emergency SOS</h3>
+                            <p>One-tap emergency alert to instantly notify your emergency contacts with your current location.</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">👥</div>
+                            <h3>Trusted Contacts</h3>
+                            <p>Manage your emergency contacts list and customize alert messages for different situations.</p>
+                        </div>
+                    </section>
+                </section>
+
+                <!-- Safe Spots Section -->
+                <section id="safespots-section" style="display: none;">
+                    <div class="hero">
+                        <h1>Find Safe Spots Near You</h1>
+                        <p>Discover nearby safe locations like police stations, hospitals, and public establishments.</p>
+                    </div>
+
+                    <div class="map-controls">
+                        <button id="findPoliceBtn" class="btn btn-blue">
+                            <span>👮</span>
+                            Police Stations
+                        </button>
+                        <button id="findHospitalsBtn" class="btn btn-red">
+                            <span>🏥</span>
+                            Hospitals
+                        </button>
+                        <button id="findCafesBtn" class="btn btn-yellow">
+                            <span>☕</span>
+                            Cafes
+                        </button>
+                        <button id="findStoresBtn" class="btn btn-green">
+                            <span>🏪</span>
+                            Stores
+                        </button>
+                    </div>
+
+                    <div class="map-container">
+                        <div id="map"></div>
+                        <div id="placesList" class="places-list"></div>
+                    </div>
+
+                    <div class="map-legend">
+                        <div class="legend-item">
+                            <div class="legend-color color-police"></div>
+                            <span>Police Station</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color color-hospital"></div>
+                            <span>Hospital</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color color-cafe"></div>
+                            <span>Cafe</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color color-store"></div>
+                            <span>Store</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Profile Section -->
+                <section id="profile-section" style="display: none;">
+                    <div class="hero">
+                        <h1>Your Profile</h1>
+                        <p>Manage your account settings and emergency contacts.</p>
+                    </div>
+
+                    <div class="profile-section">
+                        <div class="profile-header">
+                            <div class="profile-info">
+                                <h2 id="profileName">Loading...</h2>
+                                <p id="profileEmail">Loading...</p>
+                            </div>
+                        </div>
+
+                        <div class="settings-form">
+                            <div class="form-group">
+                                <label for="emergencyMessage">Default Emergency Message</label>
+                                <input type="text" id="emergencyMessage" placeholder="EMERGENCY: I need help! Check my location.">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Emergency Contacts</label>
+                                <div class="form-group">
+                                    <input type="tel" id="newContactInput" placeholder="Enter phone number with country code (e.g., +1234567890)">
+                                    <button id="addContactBtn" class="btn btn-blue" style="margin-top: 0.5rem;">
+                                        <span>➕</span>
+                                        Add Contact
+                                    </button>
+                                </div>
+                                <div id="contactsList" class="contacts-list">
+                                    <!-- Contacts will be added here -->
+                                </div>
+                            </div>
+
+                            <button id="saveSettingsBtn" class="btn btn-green">
+                                <span>💾</span>
+                                Save Settings
+                            </button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <footer>
+            <p>© 2025 SafePath. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <!-- Status Alert -->
+    <div id="statusAlert" class="status-alert"></div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="close-modal">&times;</button>
+            <h2 class="modal-title">Login to SafePath</h2>
+            <div class="login-options">
+                <button id="googleLoginBtn" class="social-login google-login">
+                    <span>G</span>
+                    Continue with Google
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="firebase.js">
+    
+</script>
+</body>
+</html>
