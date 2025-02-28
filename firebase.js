@@ -816,9 +816,438 @@ function resetActiveButtons() {
     findStoresBtn.classList.remove('active');
 }
 
+window.addEventListener('load', function () {
+    // Find our button elements
+    const emergencyCallBtn = document.getElementById('emergencyCallBtn');
+
+    // Debug check - make sure we found the button
+    console.log("Emergency call button found:", emergencyCallBtn);
+
+    if (!emergencyCallBtn) {
+        console.error("Emergency call button not found in the DOM");
+        return; // Exit if button doesn't exist
+    }
+
+    // Make sure we have a modal
+    let emergencyCallModal = document.getElementById('emergencyCallModal');
+
+    // If modal doesn't exist, create it
+    if (!emergencyCallModal) {
+        console.log("Creating emergency call modal");
+        const modalHtml = `
+            <div id="emergencyCallModal" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.7); z-index:1000; justify-content:center; align-items:center;">
+                <div class="modal-content emergency-modal" style="background-color:white; padding:20px; border-radius:5px; max-width:400px; text-align:center;">
+                    <h2 class="modal-title">Emergency Call</h2>
+                    <p>This will call emergency services (112) and share your current location.</p>
+                    <div class="emergency-actions" style="display:flex; justify-content:center; gap:10px; margin-top:20px;">
+                        <button id="confirmEmergencyCallBtn" class="btn btn-red">
+                            <span>📞</span>
+                            Call 112 Now
+                        </button>
+                        <button id="cancelEmergencyCallBtn" class="btn btn-grey">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Append modal to body
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        emergencyCallModal = document.getElementById('emergencyCallModal');
+    }
+
+    // Direct implementation - handle the click immediately
+    emergencyCallBtn.onclick = function () {
+        console.log("Emergency call button clicked");
+
+        // Simple confirmation
+        if (confirm("Do you want to call emergency services (112)?")) {
+            console.log("Initiating emergency call");
+
+            // Try to get location if available
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function (position) {
+                        console.log("Got location:", position.coords.latitude, position.coords.longitude);
+                        // Proceed with call
+                        makeEmergencyCall();
+                    },
+                    function (error) {
+                        console.error("Location error:", error);
+                        // Still make the call even without location
+                        makeEmergencyCall();
+                    }
+                );
+            } else {
+                // Geolocation not supported
+                console.log("Geolocation not supported");
+                makeEmergencyCall();
+            }
+        }
+    };
+
+    // Function to make the emergency call
+    function makeEmergencyCall() {
+        // Use the tel: protocol to initiate the call
+        window.location.href = "tel:112";
+
+        // Show the notification
+        showNotification("Initiating call to emergency services (112)...");
+    }
+
+    // Function to show a notification
+    function showNotification(message) {
+        const notification = document.getElementById('notification');
+        if (!notification) {
+            console.error("Notification div not found");
+            return;
+        }
+
+        // Set the message
+        notification.textContent = message;
+
+        // Show the notification with smooth transition
+        notification.style.display = 'block';
+        setTimeout(() => {
+            notification.classList.add('show');
+        }, 10); // Small delay to trigger the transition
+
+        // Hide the notification after 3 seconds
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 500); // Wait for the fade-out transition to complete
+        }, 3000);
+    }
+});
+
 // Initialize Google Maps when the window loads
 window.onload = () => {
     initMap();
 };
 
+/**
+ * Invisible Emergency Voice Listener with Auto SOS Button Trigger
+ * This script runs in the background, listens for emergency phrases,
+ * and automatically triggers the existing SOS button functionality.
+ */
 
+// Configuration
+const emergencyConfig = {
+    // Emergency trigger phrases (lowercase)
+    triggerPhrases: ['help me', 'emergency', 'sos', 'help', 'danger', 'call for help'],
+    
+    // Auto-start listening when script loads
+    autoStart: true,
+    
+    // Auto-restart if recognition stops
+    autoRestart: true,
+    
+    // SOS button selector - MODIFY THIS to match your existing SOS button
+    sosButtonSelector: '#sosBtn, .btn-red, [data-action="sos"]',
+    
+    // Alternative function name if button click doesn't work
+    sosFunctionName: 'triggerSOS'
+};
+
+// Main emergency listener controller
+const EmergencyListener = (function() {
+    let recognition = null;
+    let isListening = false;
+    let lastRestartTime = 0;
+    
+    // Initialize speech recognition
+    function initSpeechRecognition() {
+        // Check browser support
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            console.error('Speech recognition not supported in this browser.');
+            return false;
+        }
+        
+        // Create speech recognition instance
+        recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
+        
+        // Set up event handlers
+        recognition.onstart = function() {
+            isListening = true;
+            console.log('[Emergency Listener] Voice recognition started and running in background');
+        };
+        
+        recognition.onresult = function(event) {
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const transcript = event.results[i][0].transcript.toLowerCase().trim();
+                
+                if (event.results[i].isFinal) {
+                    console.log(`[Emergency Listener] Recognized: "${transcript}"`);
+                    
+                    // Check for emergency triggers
+                    const foundTrigger = emergencyConfig.triggerPhrases.find(trigger => 
+                        transcript.includes(trigger));
+                    
+                    if (foundTrigger) {
+                        console.log(`[EMERGENCY DETECTED] Triggered by phrase: "${foundTrigger}"`);
+                        handleEmergency(foundTrigger);
+                    }
+                }
+            }
+        };
+        
+        recognition.onerror = function(event) {
+            console.error(`[Emergency Listener] Error: ${event.error}`);
+        };
+        
+        recognition.onend = function() {
+            isListening = false;
+            console.log('[Emergency Listener] Voice recognition ended');
+            
+            // Auto-restart if configured and not manually stopped
+            if (emergencyConfig.autoRestart) {
+                const now = Date.now();
+                // Prevent restart loops by requiring at least 1 second between restarts
+                if (now - lastRestartTime > 1000) {
+                    lastRestartTime = now;
+                    try {
+                        console.log('[Emergency Listener] Auto-restarting voice recognition...');
+                        recognition.start();
+                    } catch (e) {
+                        console.error('[Emergency Listener] Failed to restart voice recognition:', e);
+                    }
+                } else {
+                    console.warn('[Emergency Listener] Restart throttled to prevent loop');
+                    // Try again in 3 seconds
+                    setTimeout(startListening, 3000);
+                }
+            }
+        };
+        
+        return true;
+    }
+    
+    // Start listening for voice commands
+    function startListening() {
+        if (!recognition && !initSpeechRecognition()) {
+            return false;
+        }
+        
+        if (isListening) {
+            return true; // Already listening
+        }
+        
+        try {
+            recognition.start();
+            isListening = true;
+            return true;
+        } catch (e) {
+            console.error('[Emergency Listener] Error starting recognition:', e);
+            return false;
+        }
+    }
+    
+    // Stop listening
+    function stopListening() {
+        if (recognition && isListening) {
+            try {
+                recognition.stop();
+                isListening = false;
+                console.log('[Emergency Listener] Stopped listening');
+                return true;
+            } catch (e) {
+                console.error('[Emergency Listener] Error stopping recognition:', e);
+                return false;
+            }
+        }
+        return false;
+    }
+    
+    // Handle emergency situation by triggering SOS button
+    function handleEmergency(trigger) {
+        console.log(`[EMERGENCY PROTOCOL ACTIVATED] Triggered by: "${trigger}"`);
+        
+        // First, get current location to log it
+        getLocation()
+            .then(locationData => {
+                // Log the location that will be sent
+                console.log('[EMERGENCY] Location data that will be shared:', locationData);
+            })
+            .catch(error => {
+                console.error('[EMERGENCY] Could not get location:', error);
+            })
+            .finally(() => {
+                // Trigger the SOS button or function regardless of location result
+                triggerSOSButton();
+            });
+    }
+    
+    // Get current location
+    function getLocation() {
+        return new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+                reject('Geolocation not supported');
+                return;
+            }
+            
+            navigator.geolocation.getCurrentPosition(
+                position => {
+                    const locationData = {
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                        accuracy: position.coords.accuracy,
+                        timestamp: position.timestamp,
+                        mapLink: `https://maps.google.com/?q=${position.coords.latitude},${position.coords.longitude}`
+                    };
+                    resolve(locationData);
+                },
+                error => {
+                    reject(error.message);
+                },
+                { 
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                }
+            );
+        });
+    }
+    
+    // Trigger the existing SOS button functionality
+    function triggerSOSButton() {
+        console.log('[EMERGENCY] Attempting to trigger SOS button');
+        
+        // Attempt to find and click the SOS button
+        const sosButton = document.querySelector(emergencyConfig.sosButtonSelector);
+        
+        if (sosButton) {
+            console.log('[EMERGENCY] SOS button found, triggering click event');
+            
+            // Create and dispatch click event
+            try {
+                // Try modern event approach
+                const clickEvent = new MouseEvent('click', {
+                    bubbles: true,
+                    cancelable: true,
+                    view: window
+                });
+                sosButton.dispatchEvent(clickEvent);
+                console.log('[EMERGENCY] SOS button clicked programmatically');
+                return true;
+            } catch (e) {
+                // Fallback to legacy approach
+                console.warn('[EMERGENCY] Modern click event failed, trying legacy approach:', e);
+                try {
+                    const legacyEvent = document.createEvent('MouseEvents');
+                    legacyEvent.initEvent('click', true, true);
+                    sosButton.dispatchEvent(legacyEvent);
+                    console.log('[EMERGENCY] SOS button clicked with legacy event');
+                    return true;
+                } catch (e2) {
+                    console.error('[EMERGENCY] Legacy click event also failed:', e2);
+                }
+            }
+        } else {
+            console.warn('[EMERGENCY] SOS button not found with selector:', emergencyConfig.sosButtonSelector);
+        }
+        
+        // If button not found or click failed, try to call a global SOS function
+        console.log('[EMERGENCY] Attempting to call SOS function');
+        
+        // Try calling the global SOS function if it exists
+        if (typeof window[emergencyConfig.sosFunctionName] === 'function') {
+            try {
+                window[emergencyConfig.sosFunctionName]();
+                console.log(`[EMERGENCY] Successfully called ${emergencyConfig.sosFunctionName}() function`);
+                return true;
+            } catch (e) {
+                console.error(`[EMERGENCY] Error calling ${emergencyConfig.sosFunctionName}() function:`, e);
+            }
+        } else {
+            console.error(`[EMERGENCY] ${emergencyConfig.sosFunctionName}() function not found in global scope`);
+        }
+        
+        // Last resort - check common SOS function names and call the first one found
+        const commonSOSFunctions = [
+            'sendSOS', 'activateSOS', 'triggerEmergency', 'sendEmergencyAlert', 
+            'emergencyFunction', 'sosAlert', 'callEmergencyContact'
+        ];
+        
+        for (const funcName of commonSOSFunctions) {
+            if (typeof window[funcName] === 'function') {
+                try {
+                    console.log(`[EMERGENCY] Trying common function: ${funcName}()`);
+                    window[funcName]();
+                    console.log(`[EMERGENCY] Successfully called ${funcName}() function`);
+                    return true;
+                } catch (e) {
+                    console.error(`[EMERGENCY] Error calling ${funcName}() function:`, e);
+                }
+            }
+        }
+        
+        console.error('[EMERGENCY] All attempts to trigger SOS functionality failed');
+        return false;
+    }
+    
+    // Test emergency function (can be called programmatically)
+    function testEmergency() {
+        console.log('[Emergency Listener] Running emergency test');
+        handleEmergency('test');
+    }
+    
+    // Public API
+    return {
+        init: function() {
+            console.log('[Emergency Listener] Initializing invisible emergency voice listener');
+            console.log('[Emergency Listener] Will trigger SOS button/function when activated');
+            initSpeechRecognition();
+            if (emergencyConfig.autoStart) {
+                startListening();
+            }
+            return this;
+        },
+        start: startListening,
+        stop: stopListening,
+        test: testEmergency,
+        isListening: function() { return isListening; },
+        updateSOSSelector: function(selector) {
+            if (selector && typeof selector === 'string') {
+                emergencyConfig.sosButtonSelector = selector;
+                console.log('[Emergency Listener] Updated SOS button selector to:', selector);
+            }
+        },
+        updateSOSFunction: function(functionName) {
+            if (functionName && typeof functionName === 'string') {
+                emergencyConfig.sosFunctionName = functionName;
+                console.log('[Emergency Listener] Updated SOS function name to:', functionName);
+            }
+        },
+        setTriggerPhrases: function(phrases) {
+            if (Array.isArray(phrases) && phrases.length > 0) {
+                emergencyConfig.triggerPhrases = phrases.map(p => p.toLowerCase());
+                console.log('[Emergency Listener] Updated trigger phrases:', emergencyConfig.triggerPhrases);
+            }
+        }
+    };
+})();
+
+/**
+ * Initialize the emergency listener
+ * Call this function to start the background listener
+ */
+function initEmergencyListener() {
+    return EmergencyListener.init();
+}
+
+// Auto-initialize when script is loaded
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initEmergencyListener);
+} else {
+    initEmergencyListener();
+}
+
+// For testing purposes, expose the emergency listener to the global scope
+// You may remove this in production
+window._emergencyListener = EmergencyListener;

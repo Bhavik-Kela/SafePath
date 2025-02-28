@@ -12,6 +12,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <!-- Google Maps API -->
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAe_qpDoffLTZ4Zl1utBNWZqDzOgXaI_sY&libraries=places"></script>
+   
     
 </head>
 <body>
@@ -64,6 +65,16 @@
                             <span>🔍</span>
                             Find Safe Spots
                         </button>
+
+                        <button id="emergencyCallBtn" class="btn btn-orange">
+                            <span>📞</span>
+                            Emergency Call
+                        </button>
+
+                        <div id="notification" class="notification" style="display: none;">
+                            Initiating call to emergency services (112)...
+                        </div>
+
                     </section>
 
                     <section class="features">
@@ -82,6 +93,14 @@
                             <h3>Trusted Contacts</h3>
                             <p>Manage your emergency contacts list and customize alert messages for different situations.</p>
                         </div>
+
+                        <div class="feature-card">
+                            <div class="feature-icon">📞</div>
+                            <h3>Emergency Call</h3>
+                            <p>Directly call emergency services (112) with your location information for immediate assistance.</p>
+                        </div>
+
+                       
                     </section>
                 </section>
 
@@ -203,8 +222,11 @@
         </div>
     </div>
 
+
+
     <script type="module" src="firebase.js">
     
+   
 </script>
 </body>
 </html>
