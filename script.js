@@ -6,7 +6,7 @@ import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstati
 const firebaseConfig = {
 
     apiKey: "AIzaSyAADz_7iWA5dw-zM6xTS3R-pN32-nJAEC4",
-    authDomain: "safepath-a12ea.firebaseapp.com",
+    authDomain: "safe-path-9lr9h8h67-bhavik-kelas-projects.vercel.app",
     databaseURL: "https://safepath-a12ea-default-rtdb.firebaseio.com/",
     projectId: "safepath-a12ea",
     storageBucket: "safepath-a12ea.firebasestorage.app",
