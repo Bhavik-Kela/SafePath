@@ -251,20 +251,20 @@ function startLiveLocation() {
     // Debug logging
     console.log("Starting live location...");
     console.log("Authentication state:", currentUser ? "Logged in as " + currentUser.uid : "Not logged in");
-
+    
     // Enable Firebase logging
     firebase.database.enableLogging(true);
-
+    
     if (!currentUser) {
         showAlert("Please login to share your location", "warning");
         return;
     }
-
+    
     if (locationTrackingId) {
         showAlert("Already sharing location", "warning");
         return;
     }
-
+    
     // Test write operation first
     console.log("Attempting test write...");
     database.ref(`users/${currentUser.uid}/test`).set({
@@ -272,7 +272,7 @@ function startLiveLocation() {
     })
     .then(() => {
         console.log("Test write successful, proceeding with location tracking");
-
+        
         // Continue with normal location tracking
         locationTrackingId = navigator.geolocation.watchPosition(
             position => {
@@ -286,17 +286,15 @@ function startLiveLocation() {
                     isActive: true,
                     displayName: currentUser.displayName || "User"
                 };
-
+                
                 // Save to Firebase
                 database.ref(`users/${currentUser.uid}/location`).set(locationData)
                     .then(() => console.log("Location updated successfully"))
                     .catch(error => {
                         console.error("Error updating location:", error);
-                        console.log("Error code:", error.code);
-                        console.log("Error message:", error.message);
-                        console.log("Error details:", error.details);
+                        console.log("Error details:", error.code, error.message);
                     });
-
+                
                 // Update map marker
                 if (map && userMarker) {
                     const newPosition = new google.maps.LatLng(locationData.latitude, locationData.longitude);
@@ -310,15 +308,13 @@ function startLiveLocation() {
             },
             { enableHighAccuracy: true, maximumAge: 10000, timeout: 10000 }
         );
-
+        
         showAlert("Live location sharing started", "success");
         liveLocationBtn.innerHTML = `<span>⏹️</span> Live Sharing Done`;
     })
     .catch(error => {
         console.error("Test write failed:", error);
-        console.log("Error code:", error.code);
-        console.log("Error message:", error.message);
-        console.log("Error details:", error.details);
+        console.log("Error details:", error.code, error.message);
         showAlert("Unable to start location sharing due to database access issue", "error");
     });
 }
@@ -1281,3 +1277,23 @@ if (document.readyState === 'loading') {
 // For testing purposes, expose the emergency listener to the global scope
 // You may remove this in production
 window._emergencyListener = EmergencyListener;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+if (process.env.PAUSE_APP === "true") {
+    // Show maintenance message
+    document.body.innerHTML = "<h1>App is currently paused for maintenance.</h1>";
+}
