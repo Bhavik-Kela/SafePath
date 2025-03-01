@@ -293,7 +293,8 @@ function startLiveLocation() {
     liveLocationBtn.innerHTML = `<span>⏹️</span> Live Sharing Done`;
 }
 
-// Stop tracking live location function stopLiveLocation() {
+// Stop tracking live location
+ function stopLiveLocation() {
     if (locationTrackingId) {
         navigator.geolocation.clearWatch(locationTrackingId);
         locationTrackingId = null;
@@ -308,6 +309,7 @@ function startLiveLocation() {
         liveLocationBtn.onclick = startLiveLocation;  // Rebind the function
         showAlert("Location sharing stopped", "success");
     }
+}
 
 
 
