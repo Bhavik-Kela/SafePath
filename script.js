@@ -1,7 +1,7 @@
  // Firebase configuration - Replace with your Firebase project details
 // Firebase configuration - Replace with your Firebase project details
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+import { getAuth, signInWithRedirect, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
 const firebaseConfig = {
 
@@ -733,7 +733,7 @@ loginLogoutBtn.addEventListener('click', () => {
 closeModalBtn.addEventListener('click', toggleModal);
 googleLoginBtn.addEventListener('click', () => {
     const provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithPopup(provider)
+    auth.signInWithRedirect(provider)
         .then(() => {
             toggleModal();
         })
