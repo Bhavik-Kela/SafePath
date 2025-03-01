@@ -999,13 +999,11 @@ const EmergencyListener = (function() {
             }
         };
         
-        recognition.onerror = function(event) {
-            console.log(`[Emergency Listener] Error: ${event.error}`);
-        };
+        
         
         recognition.onend = function() {
             isListening = false;
-            console.log('[Emergency Listener] Voice recognition ended');
+            
             
             // Auto-restart if configured and not manually stopped
             if (emergencyConfig.autoRestart) {
@@ -1013,16 +1011,14 @@ const EmergencyListener = (function() {
                 // Prevent restart loops by requiring at least 1 second between restarts
                 if (now - lastRestartTime > 1000) {
                     lastRestartTime = now;
-                    try {
-                        console.log('[Emergency Listener] Auto-restarting voice recognition...');
-                        recognition.start();
-                    } catch (e) {
+                    try{
+                    recognition.start();
+                    } 
+                    catch (e) {
                         console.error('[Emergency Listener] Failed to restart voice recognition:', e);
                     }
                 } else {
-                    console.warn('[Emergency Listener] Restart throttled to prevent loop');
-                    // Try again in 3 seconds
-                    setTimeout(startListening, 3000);
+                    setTimeout(startListening, 1000);
                 }
             }
         };
