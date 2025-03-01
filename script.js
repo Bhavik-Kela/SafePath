@@ -707,7 +707,9 @@ auth.onAuthStateChanged(user => {
         // Update profile info
         profileName.textContent = user.displayName || "User";
         profileEmail.textContent = user.email;
+        if(profileAvatar){
         profileAvatar.src = user.photoURL || "/api/placeholder/60/60";
+        }
     } else {
         // User is signed out
         currentUser = null;
