@@ -1000,7 +1000,7 @@ const EmergencyListener = (function() {
         };
         
         recognition.onerror = function(event) {
-            console.error(`[Emergency Listener] Error: ${event.error}`);
+            console.log(`[Emergency Listener] Error: ${event.error}`);
         };
         
         recognition.onend = function() {
