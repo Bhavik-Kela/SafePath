@@ -248,6 +248,13 @@ function getCurrentLocation() {
 let locationTrackingId = null;
 
 function startLiveLocation() {
+    // Debug logging
+    console.log("Starting live location...");
+    console.log("Authentication state:", currentUser ? "Logged in as " + currentUser.uid : "Not logged in");
+
+    // Enable Firebase logging
+    firebase.database.enableLogging(true);
+
     if (!currentUser) {
         showAlert("Please login to share your location", "warning");
         return;
@@ -258,39 +265,62 @@ function startLiveLocation() {
         return;
     }
 
-    locationTrackingId = navigator.geolocation.watchPosition(
-        position => {
-            const locationData = {
-                latitude: position.coords.latitude,
-                longitude: position.coords.longitude,
-                timestamp: new Date().toISOString(),
-                accuracy: position.coords.accuracy,
-                userId: currentUser.uid,
-                isActive: true,
-                displayName: currentUser.displayName || "User"
-            };
+    // Test write operation first
+    console.log("Attempting test write...");
+    database.ref(`users/${currentUser.uid}/test`).set({
+        timestamp: new Date().toISOString()
+    })
+    .then(() => {
+        console.log("Test write successful, proceeding with location tracking");
 
-            // Save to Firebase
-            database.ref(`users/${currentUser.uid}/location`).set(locationData)
-                .then(() => console.log("Location updated successfully"))
-                .catch(error => console.error("Error updating location:", error));
+        // Continue with normal location tracking
+        locationTrackingId = navigator.geolocation.watchPosition(
+            position => {
+                console.log("Got position, attempting to save to Firebase");
+                const locationData = {
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                    timestamp: new Date().toISOString(),
+                    accuracy: position.coords.accuracy,
+                    userId: currentUser.uid,
+                    isActive: true,
+                    displayName: currentUser.displayName || "User"
+                };
 
-            // Update map marker
-            if (map && userMarker) {
-                const newPosition = new google.maps.LatLng(locationData.latitude, locationData.longitude);
-                userMarker.setPosition(newPosition);
-                map.setCenter(newPosition);
-            }
-        },
-        error => {
-            showAlert(`Location tracking error: ${error.message}`, "error");
-            stopLiveLocation();
-        },
-        { enableHighAccuracy: true, maximumAge: 10000, timeout: 10000 }
-    );
+                // Save to Firebase
+                database.ref(`users/${currentUser.uid}/location`).set(locationData)
+                    .then(() => console.log("Location updated successfully"))
+                    .catch(error => {
+                        console.error("Error updating location:", error);
+                        console.log("Error code:", error.code);
+                        console.log("Error message:", error.message);
+                        console.log("Error details:", error.details);
+                    });
 
-    showAlert("Live location sharing started", "success");
-    liveLocationBtn.innerHTML = `<span>⏹️</span> Live Sharing Done`;
+                // Update map marker
+                if (map && userMarker) {
+                    const newPosition = new google.maps.LatLng(locationData.latitude, locationData.longitude);
+                    userMarker.setPosition(newPosition);
+                    map.setCenter(newPosition);
+                }
+            },
+            error => {
+                showAlert(`Location tracking error: ${error.message}`, "error");
+                stopLiveLocation();
+            },
+            { enableHighAccuracy: true, maximumAge: 10000, timeout: 10000 }
+        );
+
+        showAlert("Live location sharing started", "success");
+        liveLocationBtn.innerHTML = `<span>⏹️</span> Live Sharing Done`;
+    })
+    .catch(error => {
+        console.error("Test write failed:", error);
+        console.log("Error code:", error.code);
+        console.log("Error message:", error.message);
+        console.log("Error details:", error.details);
+        showAlert("Unable to start location sharing due to database access issue", "error");
+    });
 }
 
 // Stop tracking live location
